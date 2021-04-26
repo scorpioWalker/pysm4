@@ -4,7 +4,7 @@
 
 from sys import version_info
 
-from base64 import b64encode, b64decode
+from base64 import urlsafe_b64encode, urlsafe_b64decode, b64decode
 from binascii import hexlify, unhexlify
 
 
@@ -332,7 +332,7 @@ def _unhex(hex_str):
 
 
 # 电子密码本(ECB)
-def encrypt_ecb(plain_text, key):
+def encrypt_ecb(plain_text, key, b64key=False):
     """
     SM4(ECB)加密
     :param plain_text: 明文
@@ -342,6 +342,8 @@ def encrypt_ecb(plain_text, key):
     if plain_text is None:
         return
 
+    if b64key:
+        key = b64decode(key)
     # 密钥检验
     key = _key_iv_check(key_iv=key)
 
@@ -353,19 +355,21 @@ def encrypt_ecb(plain_text, key):
                          mk=int(_hex(key), 16))
         cipher_hex_list.append(num2hex(num=cipher, width=BLOCK_HEX))
 
-    cipher_text = b64encode(_unhex(''.join(cipher_hex_list)))
+    cipher_text = urlsafe_b64encode(_unhex(''.join(cipher_hex_list)))
     return cipher_text if PY2 else cipher_text.decode(E_FMT)
 
 
-def decrypt_ecb(cipher_text, key):
+def decrypt_ecb(cipher_text, key, b64key=False):
     """
     SM4(ECB)解密
     :param cipher_text: 密文
     :param key: 密钥, 小于等于16字节
     """
-    cipher_text = b64decode(cipher_text)
+    cipher_text = urlsafe_b64decode(cipher_text)
     cipher_hex = _hex(cipher_text)
 
+    if b64key:
+        key = b64decode(key)
     # 密码检验
     key = _key_iv_check(key_iv=key)
     plain_hex_list = []
@@ -405,7 +409,7 @@ def encrypt_cbc(plain_text, key, iv):
                          mk=int(_hex(key), 16))
         ivs.append(cipher)
 
-    cipher_text = b64encode(_unhex(''.join([num2hex(num=c, width=BLOCK_HEX)
+    cipher_text = urlsafe_b64encode(_unhex(''.join([num2hex(num=c, width=BLOCK_HEX)
                                             for c in ivs[1:]])))
     return cipher_text if PY2 else cipher_text.decode(E_FMT)
 
@@ -417,7 +421,7 @@ def decrypt_cbc(cipher_text, key, iv):
     :param key: 密钥 小于等于16字节
     :param iv: 初始化向量 小于等于16字节
     """
-    cipher_text = b64decode(cipher_text)
+    cipher_text = urlsafe_b64decode(cipher_text)
     cipher_hex = _hex(cipher_text)
 
     # 密钥检测
